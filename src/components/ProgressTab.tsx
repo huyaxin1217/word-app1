@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'motion/react';
+import { Word } from '../types';
 
-export function ProgressTab() {
+export function ProgressTab({ words = [] }: { words?: Word[] }) {
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
@@ -13,13 +14,13 @@ export function ProgressTab() {
       <h2 className="text-3xl font-bold text-slate-800 tracking-tight mb-6">正在学习</h2>
       
       <div className="bg-white/40 backdrop-blur-xl rounded-2xl p-6 shadow-sm border border-white/60 mb-6">
-        <h3 className="text-lg font-semibold text-slate-800 tracking-wide mb-2">考研英语真题词汇</h3>
-        <p className="text-sm text-slate-500 mb-6">已学习 45 / 5500 词</p>
+        <h3 className="text-lg font-semibold text-slate-800 tracking-wide mb-2">六级核心词汇</h3>
+        <p className="text-sm text-slate-500 mb-6">已学习 {words.filter(w => w.progress).length} / {words.length} 词</p>
         
         <div className="w-full h-2.5 bg-slate-200/50 rounded-full overflow-hidden mb-3">
           <motion.div 
             initial={{ width: 0 }}
-            animate={{ width: '15%' }}
+            animate={{ width: `${words.length > 0 ? (words.filter(w => w.progress).length / words.length) * 100 : 0}%` }}
             transition={{ duration: 1.5, delay: 0.2, type: 'spring', damping: 20 }}
             className="h-full bg-teal-500 rounded-full"
           />

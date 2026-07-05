@@ -1,5 +1,12 @@
 export type WordFamiliarity = 0 | 1 | 2 | 3; // 0: new, 1: vague, 2: know, 3: mastered
 
+export interface WordProgress {
+  familiarity: number;
+  reviewLevel: number;
+  nextReviewTime: number;
+  lastReviewedAt: number;
+}
+
 export interface Word {
   id: string;
   english: string;
@@ -8,6 +15,7 @@ export interface Word {
   exampleEn: string;
   exampleZh: string;
   familiarity: WordFamiliarity;
+  progress?: WordProgress;
 }
 
 export type PetOutfit = 'none' | 'hat' | 'glasses' | 'headphone';

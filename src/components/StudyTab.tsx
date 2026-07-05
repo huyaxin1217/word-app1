@@ -4,25 +4,30 @@ import { TreeProgress } from './TreeProgress';
 import { Pet } from './Pet';
 import { motion, AnimatePresence } from 'motion/react';
 import { Eye, Shirt } from 'lucide-react';
-
-const mockWords: Word[] = [
-  { id: '1', english: 'Serendipity', phonetic: '/ˌserənˈdipədē/', definition: '意外发现珍奇事物的本领；机缘凑巧', exampleEn: 'A fortunate stroke of serendipity.', exampleZh: '一次幸运的机缘巧合。', familiarity: 0 },
-  { id: '2', english: 'Ephemeral', phonetic: '/əˈfem(ə)rəl/', definition: '短暂的，朝生暮死的', exampleEn: 'Fashions are ephemeral.', exampleZh: '时尚是短暂的。', familiarity: 1 },
-];
+import { updateWordProgress } from '../services/db';
 
 interface StudyTabProps {
   outfit: PetOutfit;
   onOpenDressUp: () => void;
   onAddCoins: (amount: number) => void;
+  words: Word[];
+  userId: string | null;
+  onWordStudied: (wordId: string) => void;
 }
 
-export function StudyTab({ outfit, onOpenDressUp, onAddCoins }: StudyTabProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+export function StudyTab({ outfit, onOpenDressUp, onAddCoins, words, userId, onWordStudied }: StudyTabProps) {
+  const [queue, setQueue] = useState<Word[]>([]);
   const [showDefinition, setShowDefinition] = useState(false);
-  const [words, setWords] = useState<Word[]>(mockWords);
   const [idleTime, setIdleTime] = useState(0);
 
-  const currentWord = words[currentIndex];
+  useEffect(() => {
+    // Only set queue initially to avoid overwriting local progress during session
+    if (queue.length === 0 && words.length > 0) {
+      setQueue(words);
+    }
+  }, [words]);
+
+  const currentWord = queue[0];
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -33,29 +38,38 @@ export function StudyTab({ outfit, onOpenDressUp, onAddCoins }: StudyTabProps) {
 
   const resetIdle = () => setIdleTime(0);
 
-  const handleAction = (action: 'forgot' | 'vague' | 'know') => {
+  const handleAction = async (action: 'forgot' | 'vague' | 'know') => {
     resetIdle();
-    const updatedWords = [...words];
-    let newFam = currentWord.familiarity;
     
-    if (action === 'know') {
-      newFam = Math.min(3, newFam + 1) as WordFamiliarity;
-    } else if (action === 'forgot') {
-      newFam = Math.max(0, newFam - 1) as WordFamiliarity;
+    if (userId && currentWord) {
+      const prevFam = currentWord.progress?.familiarity || 0;
+      const newProg = await updateWordProgress(userId, currentWord.id, action, currentWord.progress);
+      
+      if (newProg.familiarity === 3 && prevFam < 3) {
+        onAddCoins(10);
+      }
+      
+      const updatedWord = { ...currentWord, familiarity: newProg.familiarity as WordFamiliarity, progress: newProg };
+
+      setTimeout(() => {
+        setShowDefinition(false);
+        if (action === 'know') {
+           onWordStudied(currentWord.id);
+           setQueue(prev => prev.slice(1));
+        } else {
+           setQueue(prev => [...prev.slice(1), updatedWord]);
+        }
+      }, 600);
     }
-
-    updatedWords[currentIndex] = { ...currentWord, familiarity: newFam };
-    setWords(updatedWords);
-
-    if (newFam === 3 && currentWord.familiarity < 3) {
-      onAddCoins(10);
-    }
-
-    setTimeout(() => {
-      setShowDefinition(false);
-      setCurrentIndex((prev) => (prev + 1) % words.length);
-    }, 600);
   };
+
+  if (!currentWord) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-slate-500 font-medium">今天的新词已经学完啦！</p>
+      </div>
+    );
+  }
 
   return (
     <motion.div 
@@ -66,6 +80,11 @@ export function StudyTab({ outfit, onOpenDressUp, onAddCoins }: StudyTabProps) {
       className="flex flex-col h-full px-6"
       onClick={resetIdle}
     >
+      <div className="flex items-center justify-between mb-2 mt-4">
+        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">今日新词</h2>
+        <span className="text-sm font-medium text-teal-600 bg-teal-50 px-3 py-1 rounded-full">剩余 {queue.length}</span>
+      </div>
+
       {/* Tree Progress */}
       <div className="h-28 flex items-center justify-center mb-2">
         <TreeProgress familiarity={currentWord.familiarity} />

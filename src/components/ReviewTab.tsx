@@ -4,25 +4,29 @@ import { TreeProgress } from './TreeProgress';
 import { Pet } from './Pet';
 import { motion, AnimatePresence } from 'motion/react';
 import { Eye, Shirt } from 'lucide-react';
-
-const mockReviewWords: Word[] = [
-  { id: '3', english: 'Luminous', phonetic: '/ˈlo͞omənəs/', definition: '发光的，明亮的', exampleEn: 'The luminous dial on his watch.', exampleZh: '他手表上发光的表盘。', familiarity: 2 },
-  { id: '4', english: 'Ethereal', phonetic: '/əˈTHirēəl/', definition: '轻飘的，缥缈的；超凡的', exampleEn: 'Her ethereal beauty.', exampleZh: '她超凡脱俗的美。', familiarity: 3 },
-];
+import { updateWordProgress } from '../services/db';
 
 interface ReviewTabProps {
   outfit: PetOutfit;
   onOpenDressUp: () => void;
   onAddCoins: (amount: number) => void;
+  words: Word[];
+  userId: string | null;
+  onWordReviewed: (wordId: string) => void;
 }
 
-export function ReviewTab({ outfit, onOpenDressUp, onAddCoins }: ReviewTabProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+export function ReviewTab({ outfit, onOpenDressUp, onAddCoins, words, userId, onWordReviewed }: ReviewTabProps) {
+  const [queue, setQueue] = useState<Word[]>([]);
   const [showDefinition, setShowDefinition] = useState(false);
-  const [words, setWords] = useState<Word[]>(mockReviewWords);
   const [idleTime, setIdleTime] = useState(0);
+  
+  useEffect(() => {
+    if (queue.length === 0 && words.length > 0) {
+      setQueue(words);
+    }
+  }, [words]);
 
-  const currentWord = words[currentIndex];
+  const currentWord = queue[0];
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -33,14 +37,38 @@ export function ReviewTab({ outfit, onOpenDressUp, onAddCoins }: ReviewTabProps)
 
   const resetIdle = () => setIdleTime(0);
 
-  const handleAction = (action: 'forgot' | 'vague' | 'know') => {
+  const handleAction = async (action: 'forgot' | 'vague' | 'know') => {
     resetIdle();
     
-    setTimeout(() => {
-      setShowDefinition(false);
-      setCurrentIndex((prev) => (prev + 1) % words.length);
-    }, 600);
+    if (userId && currentWord) {
+      const prevFam = currentWord.progress?.familiarity || 0;
+      const newProg = await updateWordProgress(userId, currentWord.id, action, currentWord.progress);
+      
+      if (newProg.familiarity === 3 && prevFam < 3) {
+        onAddCoins(5);
+      }
+      
+      const updatedWord = { ...currentWord, familiarity: newProg.familiarity as WordFamiliarity, progress: newProg };
+
+      setTimeout(() => {
+        setShowDefinition(false);
+        if (action === 'know') {
+           onWordReviewed(currentWord.id);
+           setQueue(prev => prev.slice(1));
+        } else {
+           setQueue(prev => [...prev.slice(1), updatedWord]);
+        }
+      }, 600);
+    }
   };
+
+  if (!currentWord) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-slate-500 font-medium">今天的复习已经完成啦！<br/><span className="text-sm font-normal">（根据艾宾浩斯记忆曲线，明天再来看看吧）</span></p>
+      </div>
+    );
+  }
 
   return (
     <motion.div 
@@ -51,9 +79,9 @@ export function ReviewTab({ outfit, onOpenDressUp, onAddCoins }: ReviewTabProps)
       className="flex flex-col h-full px-6"
       onClick={resetIdle}
     >
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 mt-4">
         <h2 className="text-2xl font-bold text-slate-800 tracking-tight">今日复习</h2>
-        <span className="text-sm font-medium text-teal-600 bg-teal-50 px-3 py-1 rounded-full">{currentIndex + 1} / {words.length}</span>
+        <span className="text-sm font-medium text-teal-600 bg-teal-50 px-3 py-1 rounded-full">剩余 {queue.length}</span>
       </div>
 
       {/* Word Card - Generic Liquid Glass */}

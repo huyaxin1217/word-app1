@@ -1,0 +1,22 @@
+export const initialWords = [
+  { english: 'initially', phonetic: '/ɪˈnɪʃəli/', definition: 'ad.最初，开始', exampleEn: 'Initially, we thought it was a good idea.', exampleZh: '起初，我们认为这是个好主意。', book: 'CET6' },
+  { english: 'makeup', phonetic: '/ˈmeɪkʌp/', definition: 'n.组织；性格；化装品', exampleEn: 'She applied her makeup carefully.', exampleZh: '她仔细地化了妆。', book: 'CET6' },
+  { english: 'optimum', phonetic: '/ˈɒptɪməm/', definition: 'n.最适条件，最适度', exampleEn: 'The plant grows in optimum conditions.', exampleZh: '这种植物在最适宜的条件下生长。', book: 'CET6' },
+  { english: 'block', phonetic: '/blɒk/', definition: 'n.阻塞；障碍物', exampleEn: 'The road was blocked by a fallen tree.', exampleZh: '道路被倒下的树挡住了。', book: 'CET6' },
+  { english: 'damn', phonetic: '/dæm/', definition: 'vt.诅咒 n.诅咒；丝毫', exampleEn: 'Damn it! I lost my keys.', exampleZh: '该死！我把钥匙丢了。', book: 'CET6' },
+  { english: 'integral', phonetic: '/ˈɪntɪɡrəl/', definition: 'a.组成的；整的', exampleEn: 'Vegetables are an integral part of our diet.', exampleZh: '蔬菜是我们饮食中不可或缺的一部分。', book: 'CET6' },
+  { english: 'composition', phonetic: '/ˌkɒmpəˈzɪʃən/', definition: 'n.组成，构成，结构', exampleEn: 'The composition of the soil is clay and sand.', exampleZh: '土壤的成分是粘土和沙子。', book: 'CET6' },
+  { english: 'value', phonetic: '/ˈvæljuː/', definition: 'vt.尊重，重视，评价', exampleEn: 'I value your friendship.', exampleZh: '我很看重你的友谊。', book: 'CET6' },
+  { english: 'dignity', phonetic: '/ˈdɪɡnɪti/', definition: 'a.尊贵；(举止)庄严', exampleEn: 'He maintained his dignity despite the criticism.', exampleZh: '尽管受到批评，他仍保持着尊严。', book: 'CET6' },
+  { english: 'grunt', phonetic: '/ɡrʌnt/', definition: 'vi.作呼噜声；咕哝', exampleEn: 'The pig gave a satisfied grunt.', exampleZh: '那头猪发出了满意的哼哼声。', book: 'CET6' },
+  { english: 'abide', phonetic: '/əˈbaɪd/', definition: 'vt.遵守 vt.忍受', exampleEn: 'You must abide by the rules.', exampleZh: '你必须遵守规则。', book: 'CET6' },
+  { english: 'composer', phonetic: '/kəmˈpəʊzər/', definition: 'n.作曲家；调停人', exampleEn: 'Beethoven is a famous composer.', exampleZh: '贝多芬是著名的作曲家。', book: 'CET6' },
+  { english: 'slave', phonetic: '/sleɪv/', definition: 'vi.作苦工 vt.奴役', exampleEn: 'They were treated like slaves.', exampleZh: '他们被当成奴隶对待。', book: 'CET6' },
+  { english: 'consequent', phonetic: '/ˈkɒnsɪkwənt/', definition: 'a.作为结果的；必然的', exampleEn: 'The rise in prices and consequent fall in demand.', exampleZh: '价格上涨及随之而来的需求下降。', book: 'CET6' },
+  { english: 'hike', phonetic: '/haɪk/', definition: 'vi.作长途徒步旅行', exampleEn: 'We are going on a hike this weekend.', exampleZh: '我们这个周末要去徒步旅行。', book: 'CET6' },
+  { english: 'action', phonetic: '/ˈækʃən/', definition: 'n.作用；情节', exampleEn: 'Actions speak louder than words.', exampleZh: '事实胜于雄辩。', book: 'CET6' },
+  { english: 'trade', phonetic: '/treɪd/', definition: 'vi.做买卖；交换', exampleEn: 'The country trades with many other nations.', exampleZh: '这个国家与许多其他国家有贸易往来。', book: 'CET6' },
+  { english: 'deal', phonetic: '/diːl/', definition: 'vi.做买卖；对付', exampleEn: 'He knows how to deal with difficult customers.', exampleZh: '他知道如何对付难缠的顾客。', book: 'CET6' },
+  { english: 'lease', phonetic: '/liːs/', definition: 'n.租约，契约，租契', exampleEn: 'We signed a three-year lease for the apartment.', exampleZh: '我们签了这套公寓的三年的租约。', book: 'CET6' },
+  { english: 'charter', phonetic: '/ˈtʃɑːtər/', definition: 'vt.租 n.宪章；契据', exampleEn: 'The United Nations Charter was signed in 1945.', exampleZh: '联合国宪章于1945年签署。', book: 'CET6' }
+];

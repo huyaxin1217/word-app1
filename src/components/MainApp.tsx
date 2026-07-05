@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { TabType, PetOutfit } from '../types';
+import React, { useState, useEffect } from 'react';
+import { TabType, PetOutfit, Word } from '../types';
 import { StudyTab } from './StudyTab';
 import { ReviewTab } from './ReviewTab';
 import { LibraryTab } from './LibraryTab';
@@ -7,6 +7,9 @@ import { ProgressTab } from './ProgressTab';
 import { PetDressUpModal, UserProfileModal } from './Modals';
 import { User, Book, Layers, BarChart2, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { auth } from '../firebase';
+import { signInAnonymously } from 'firebase/auth';
+import { initializeVocabulary, getUserData, fetchWordsForStudy, updateUserData } from '../services/db';
 
 export function MainApp() {
   const [activeTab, setActiveTab] = useState<TabType>('study');
@@ -14,6 +17,72 @@ export function MainApp() {
   const [showDressUp, setShowDressUp] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [coins, setCoins] = useState(120);
+  
+  const [userId, setUserId] = useState<string | null>(null);
+  const [allWords, setAllWords] = useState<Word[]>([]);
+  const [newWords, setNewWords] = useState<Word[]>([]);
+  const [reviewWords, setReviewWords] = useState<Word[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const initData = async () => {
+      try {
+        let uid = 'local-user';
+        try {
+          const userCred = await signInAnonymously(auth);
+          uid = userCred.user.uid;
+        } catch (authErr) {
+          console.warn("Auth failed, using local fallback ID", authErr);
+          let localId = localStorage.getItem('vocab_user_id');
+          if (!localId) {
+            localId = 'user_' + Math.random().toString(36).substring(2, 9);
+            localStorage.setItem('vocab_user_id', localId);
+          }
+          uid = localId;
+        }
+        setUserId(uid);
+        
+        await initializeVocabulary();
+        const userData = await getUserData(uid);
+        setCoins(userData?.coins || 0);
+        if (userData?.petOutfit) setOutfit(userData.petOutfit);
+        
+        const fetchedWords = await fetchWordsForStudy(uid, userData?.currentBook || 'CET6');
+        setAllWords(fetchedWords);
+        
+        const now = Date.now();
+        const unstudied = fetchedWords.filter(w => !w.progress);
+        const toReview = fetchedWords.filter(w => w.progress && w.progress.nextReviewTime <= now);
+        
+        setNewWords(unstudied);
+        setReviewWords(toReview);
+      } catch (error) {
+        console.error("Error initializing:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    initData();
+  }, []);
+
+  const handleUpdateCoins = (amount: number) => {
+    const newCoins = coins + amount;
+    setCoins(newCoins);
+    if (userId) updateUserData(userId, { coins: newCoins });
+  };
+  
+  const handleOutfitChange = (newOutfit: PetOutfit) => {
+    setOutfit(newOutfit);
+    if (userId) updateUserData(userId, { petOutfit: newOutfit });
+  };
+
+  const handleWordStudied = (wordId: string) => {
+    setNewWords(prev => prev.filter(w => w.id !== wordId));
+  };
+  
+  const handleWordReviewed = (wordId: string) => {
+    setReviewWords(prev => prev.filter(w => w.id !== wordId));
+  };
 
   return (
     <div className="flex flex-col h-full w-full relative bg-slate-50 overflow-hidden font-sans">
@@ -42,20 +111,26 @@ export function MainApp() {
 
       {/* Main Content Area */}
       <div className="flex-1 relative z-10 overflow-hidden">
-        <AnimatePresence mode="wait">
-          {activeTab === 'study' && (
-            <StudyTab key="study" outfit={outfit} onOpenDressUp={() => setShowDressUp(true)} onAddCoins={(c) => setCoins(prev => prev + c)} />
-          )}
-          {activeTab === 'review' && (
-            <ReviewTab key="review" outfit={outfit} onOpenDressUp={() => setShowDressUp(true)} onAddCoins={(c) => setCoins(prev => prev + c)} />
-          )}
-          {activeTab === 'library' && (
-             <LibraryTab key="library" />
-          )}
-          {activeTab === 'progress' && (
-             <ProgressTab key="progress" />
-          )}
-        </AnimatePresence>
+        {loading ? (
+          <div className="h-full flex items-center justify-center">
+             <div className="animate-spin w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full" />
+          </div>
+        ) : (
+          <AnimatePresence mode="wait">
+            {activeTab === 'study' && (
+              <StudyTab key="study" outfit={outfit} onOpenDressUp={() => setShowDressUp(true)} onAddCoins={handleUpdateCoins} words={newWords} userId={userId} onWordStudied={handleWordStudied} />
+            )}
+            {activeTab === 'review' && (
+              <ReviewTab key="review" outfit={outfit} onOpenDressUp={() => setShowDressUp(true)} onAddCoins={handleUpdateCoins} words={reviewWords} userId={userId} onWordReviewed={handleWordReviewed} />
+            )}
+            {activeTab === 'library' && (
+               <LibraryTab key="library" />
+            )}
+            {activeTab === 'progress' && (
+               <ProgressTab key="progress" words={allWords} />
+            )}
+          </AnimatePresence>
+        )}
       </div>
 
       {/* Bottom Nav (Full width liquid glass style) */}
@@ -69,7 +144,7 @@ export function MainApp() {
       </div>
 
       {/* Modals */}
-      <PetDressUpModal isOpen={showDressUp} onClose={() => setShowDressUp(false)} currentOutfit={outfit} onSelectOutfit={setOutfit} />
+      <PetDressUpModal isOpen={showDressUp} onClose={() => setShowDressUp(false)} currentOutfit={outfit} onSelectOutfit={handleOutfitChange} />
       <UserProfileModal isOpen={showProfile} onClose={() => setShowProfile(false)} />
     </div>
   );

@@ -14,9 +14,9 @@ export function LibraryTab() {
       <h2 className="text-3xl font-bold text-slate-800 tracking-tight mb-6">词书更换</h2>
       
       <div className="space-y-4 overflow-y-auto pb-20 hide-scrollbar">
-        <BookCard title="考研英语真题词汇" desc="包含 2010-2023 年高频词汇" isCurrent />
+        <BookCard title="六级核心词汇" desc="精选 2500 个六级必背单词" isCurrent />
         <BookCard title="四级核心词汇" desc="精选 2000 个四级必背单词" />
-        <BookCard title="六级核心词汇" desc="精选 2500 个六级必背单词" />
+        <BookCard title="考研英语真题词汇" desc="包含 2010-2023 年高频词汇" />
         <BookCard title="雅思核心词汇" desc="雅思 7.0 必备词汇集合" />
       </div>
     </motion.div>
