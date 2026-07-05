@@ -5,21 +5,21 @@ import { Pet } from './Pet';
 import { motion, AnimatePresence } from 'motion/react';
 import { Eye, Shirt } from 'lucide-react';
 
-const mockWords: Word[] = [
-  { id: '1', english: 'Serendipity', phonetic: '/ˌserənˈdipədē/', definition: '意外发现珍奇事物的本领；机缘凑巧', exampleEn: 'A fortunate stroke of serendipity.', exampleZh: '一次幸运的机缘巧合。', familiarity: 0 },
-  { id: '2', english: 'Ephemeral', phonetic: '/əˈfem(ə)rəl/', definition: '短暂的，朝生暮死的', exampleEn: 'Fashions are ephemeral.', exampleZh: '时尚是短暂的。', familiarity: 1 },
+const mockReviewWords: Word[] = [
+  { id: '3', english: 'Luminous', phonetic: '/ˈlo͞omənəs/', definition: '发光的，明亮的', exampleEn: 'The luminous dial on his watch.', exampleZh: '他手表上发光的表盘。', familiarity: 2 },
+  { id: '4', english: 'Ethereal', phonetic: '/əˈTHirēəl/', definition: '轻飘的，缥缈的；超凡的', exampleEn: 'Her ethereal beauty.', exampleZh: '她超凡脱俗的美。', familiarity: 3 },
 ];
 
-interface StudyTabProps {
+interface ReviewTabProps {
   outfit: PetOutfit;
   onOpenDressUp: () => void;
   onAddCoins: (amount: number) => void;
 }
 
-export function StudyTab({ outfit, onOpenDressUp, onAddCoins }: StudyTabProps) {
+export function ReviewTab({ outfit, onOpenDressUp, onAddCoins }: ReviewTabProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showDefinition, setShowDefinition] = useState(false);
-  const [words, setWords] = useState<Word[]>(mockWords);
+  const [words, setWords] = useState<Word[]>(mockReviewWords);
   const [idleTime, setIdleTime] = useState(0);
 
   const currentWord = words[currentIndex];
@@ -35,22 +35,7 @@ export function StudyTab({ outfit, onOpenDressUp, onAddCoins }: StudyTabProps) {
 
   const handleAction = (action: 'forgot' | 'vague' | 'know') => {
     resetIdle();
-    const updatedWords = [...words];
-    let newFam = currentWord.familiarity;
     
-    if (action === 'know') {
-      newFam = Math.min(3, newFam + 1) as WordFamiliarity;
-    } else if (action === 'forgot') {
-      newFam = Math.max(0, newFam - 1) as WordFamiliarity;
-    }
-
-    updatedWords[currentIndex] = { ...currentWord, familiarity: newFam };
-    setWords(updatedWords);
-
-    if (newFam === 3 && currentWord.familiarity < 3) {
-      onAddCoins(10);
-    }
-
     setTimeout(() => {
       setShowDefinition(false);
       setCurrentIndex((prev) => (prev + 1) % words.length);
@@ -66,9 +51,9 @@ export function StudyTab({ outfit, onOpenDressUp, onAddCoins }: StudyTabProps) {
       className="flex flex-col h-full px-6"
       onClick={resetIdle}
     >
-      {/* Tree Progress */}
-      <div className="h-28 flex items-center justify-center mb-2">
-        <TreeProgress familiarity={currentWord.familiarity} />
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">今日复习</h2>
+        <span className="text-sm font-medium text-teal-600 bg-teal-50 px-3 py-1 rounded-full">{currentIndex + 1} / {words.length}</span>
       </div>
 
       {/* Word Card - Generic Liquid Glass */}

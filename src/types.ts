@@ -12,7 +12,7 @@ export interface Word {
 
 export type PetOutfit = 'none' | 'hat' | 'glasses' | 'headphone';
 
-export type TabType = 'study' | 'library' | 'progress';
+export type TabType = 'study' | 'review' | 'library' | 'progress';
 
 export interface UserStats {
   coins: number;
