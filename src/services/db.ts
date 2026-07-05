@@ -30,7 +30,7 @@ export const getUserData = async (userId: string) => {
   
   if (!userSnap.exists()) {
     const defaultData = {
-      coins: 120,
+      coins: 0,
       currentBook: 'CET6',
       petOutfit: 'none' as PetOutfit,
       createdAt: serverTimestamp()

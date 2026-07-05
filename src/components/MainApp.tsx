@@ -16,7 +16,7 @@ export function MainApp() {
   const [outfit, setOutfit] = useState<PetOutfit>('none');
   const [showDressUp, setShowDressUp] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const [coins, setCoins] = useState(120);
+  const [coins, setCoins] = useState(0);
   
   const [userId, setUserId] = useState<string | null>(null);
   const [allWords, setAllWords] = useState<Word[]>([]);
@@ -76,12 +76,14 @@ export function MainApp() {
     if (userId) updateUserData(userId, { petOutfit: newOutfit });
   };
 
-  const handleWordStudied = (wordId: string) => {
-    setNewWords(prev => prev.filter(w => w.id !== wordId));
+  const handleWordStudied = (updatedWord: Word) => {
+    setNewWords(prev => prev.filter(w => w.id !== updatedWord.id));
+    setAllWords(prev => prev.map(w => w.id === updatedWord.id ? updatedWord : w));
   };
   
-  const handleWordReviewed = (wordId: string) => {
-    setReviewWords(prev => prev.filter(w => w.id !== wordId));
+  const handleWordReviewed = (updatedWord: Word) => {
+    setReviewWords(prev => prev.filter(w => w.id !== updatedWord.id));
+    setAllWords(prev => prev.map(w => w.id === updatedWord.id ? updatedWord : w));
   };
 
   return (
@@ -127,7 +129,7 @@ export function MainApp() {
                <LibraryTab key="library" />
             )}
             {activeTab === 'progress' && (
-               <ProgressTab key="progress" words={allWords} />
+               <ProgressTab key="progress" words={allWords} coins={coins} />
             )}
           </AnimatePresence>
         )}

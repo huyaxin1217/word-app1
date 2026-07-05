@@ -12,7 +12,7 @@ interface ReviewTabProps {
   onAddCoins: (amount: number) => void;
   words: Word[];
   userId: string | null;
-  onWordReviewed: (wordId: string) => void;
+  onWordReviewed: (updatedWord: Word) => void;
 }
 
 export function ReviewTab({ outfit, onOpenDressUp, onAddCoins, words, userId, onWordReviewed }: ReviewTabProps) {
@@ -53,7 +53,7 @@ export function ReviewTab({ outfit, onOpenDressUp, onAddCoins, words, userId, on
       setTimeout(() => {
         setShowDefinition(false);
         if (action === 'know') {
-           onWordReviewed(currentWord.id);
+           onWordReviewed(updatedWord);
            setQueue(prev => prev.slice(1));
         } else {
            setQueue(prev => [...prev.slice(1), updatedWord]);

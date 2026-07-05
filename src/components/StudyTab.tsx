@@ -12,7 +12,7 @@ interface StudyTabProps {
   onAddCoins: (amount: number) => void;
   words: Word[];
   userId: string | null;
-  onWordStudied: (wordId: string) => void;
+  onWordStudied: (updatedWord: Word) => void;
 }
 
 export function StudyTab({ outfit, onOpenDressUp, onAddCoins, words, userId, onWordStudied }: StudyTabProps) {
@@ -54,7 +54,7 @@ export function StudyTab({ outfit, onOpenDressUp, onAddCoins, words, userId, onW
       setTimeout(() => {
         setShowDefinition(false);
         if (action === 'know') {
-           onWordStudied(currentWord.id);
+           onWordStudied(updatedWord);
            setQueue(prev => prev.slice(1));
         } else {
            setQueue(prev => [...prev.slice(1), updatedWord]);

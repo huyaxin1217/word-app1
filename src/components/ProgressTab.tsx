@@ -2,7 +2,9 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { Word } from '../types';
 
-export function ProgressTab({ words = [] }: { words?: Word[] }) {
+export function ProgressTab({ words = [], coins = 0 }: { words?: Word[], coins?: number }) {
+  const matureTrees = words.filter(w => w.familiarity === 3).length;
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
@@ -33,11 +35,11 @@ export function ProgressTab({ words = [] }: { words?: Word[] }) {
 
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-emerald-50/60 backdrop-blur-md rounded-2xl p-5 border border-emerald-100/50 shadow-sm flex flex-col justify-center">
-          <span className="text-emerald-700 font-bold text-4xl tracking-tighter mb-1">12</span>
+          <span className="text-emerald-700 font-bold text-4xl tracking-tighter mb-1">{matureTrees}</span>
           <span className="text-emerald-600/80 text-sm font-medium">成型树木 (棵)</span>
         </div>
         <div className="bg-amber-50/60 backdrop-blur-md rounded-2xl p-5 border border-amber-100/50 shadow-sm flex flex-col justify-center">
-          <span className="text-amber-700 font-bold text-4xl tracking-tighter mb-1">120</span>
+          <span className="text-amber-700 font-bold text-4xl tracking-tighter mb-1">{coins}</span>
           <span className="text-amber-600/80 text-sm font-medium">获取金币 (G)</span>
         </div>
       </div>
