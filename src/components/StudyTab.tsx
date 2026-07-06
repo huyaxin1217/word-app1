@@ -21,6 +21,15 @@ export function StudyTab({ outfit, onOpenDressUp, onAddCoins, words, userId, onW
   const [showDefinition, setShowDefinition] = useState(false);
   const [idleTime, setIdleTime] = useState(0);
   const [isGeneratingInfo, setIsGeneratingInfo] = useState(false);
+  const [studyMode, setStudyMode] = useState<'flashcard' | 'choice' | 'spelling'>('flashcard');
+
+  // Choice Mode State
+  const [choiceOptions, setChoiceOptions] = useState<string[]>([]);
+  const [choiceStatus, setChoiceStatus] = useState<{[key: string]: 'correct' | 'wrong'}>({});
+
+  // Spelling Mode State
+  const [spellingInput, setSpellingInput] = useState('');
+  const [spellingStatus, setSpellingStatus] = useState<'typing' | 'correct' | 'wrong'>('typing');
 
   useEffect(() => {
     if (queue.length === 0 && words.length > 0) {
@@ -44,6 +53,43 @@ export function StudyTab({ outfit, onOpenDressUp, onAddCoins, words, userId, onW
   }, []);
 
   const resetIdle = () => setIdleTime(0);
+
+  useEffect(() => {
+    if (studyMode === 'choice' && currentWord && words.length > 0) {
+      const allOtherDefs = Array.from(new Set(words.filter(w => w.id !== currentWord.id && w.definition !== currentWord.definition).map(w => w.definition)));
+      const shuffledOthers = [...allOtherDefs].sort(() => Math.random() - 0.5);
+      const options = [currentWord.definition, ...shuffledOthers.slice(0, 3)].sort(() => Math.random() - 0.5);
+      setChoiceOptions(options);
+      setChoiceStatus({});
+    }
+  }, [currentWord?.id, studyMode, words]);
+
+  const handleChoiceSelect = (def: string) => {
+    if (Object.keys(choiceStatus).length > 0) return; // already answered
+    if (def === currentWord.definition) {
+      setChoiceStatus({ [def]: 'correct' });
+      handleAction('know');
+    } else {
+      setChoiceStatus({ [def]: 'wrong', [currentWord.definition]: 'correct' });
+      handleAction('forgot');
+    }
+  };
+
+  useEffect(() => {
+    setSpellingInput('');
+    setSpellingStatus('typing');
+  }, [currentWord?.id, studyMode]);
+
+  const handleSpellingSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (spellingStatus !== 'typing') return;
+    if (spellingInput.trim().toLowerCase() === currentWord.english.toLowerCase()) {
+      setSpellingStatus('correct');
+      handleAction('know');
+    } else {
+      setSpellingStatus('wrong');
+    }
+  };
 
   const generateExample = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -117,7 +163,18 @@ export function StudyTab({ outfit, onOpenDressUp, onAddCoins, words, userId, onW
       onClick={resetIdle}
     >
       <div className="flex items-center justify-between mb-2 mt-4">
-        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">今日新词</h2>
+        <div className="flex items-center space-x-3">
+          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">今日新词</h2>
+          <select 
+            value={studyMode} 
+            onChange={(e) => setStudyMode(e.target.value as any)}
+            className="bg-white/50 backdrop-blur-sm border border-slate-200 text-slate-700 text-sm font-medium px-2 py-1 rounded-lg outline-none cursor-pointer hover:bg-white/70 transition-colors"
+          >
+            <option value="flashcard">快速认读</option>
+            <option value="choice">释义选择</option>
+            <option value="spelling">拼写听写</option>
+          </select>
+        </div>
         <span className="text-sm font-medium text-teal-600 bg-teal-50 px-3 py-1 rounded-full">剩余 {queue.length}</span>
       </div>
 
@@ -137,79 +194,163 @@ export function StudyTab({ outfit, onOpenDressUp, onAddCoins, words, userId, onW
           className="flex-1 flex flex-col min-h-0"
         >
           <div 
-            onClick={() => { setShowDefinition(true); resetIdle(); }}
-            className="flex-1 bg-white/40 backdrop-blur-xl rounded-[2rem] p-8 shadow-[0_8px_32px_rgba(31,38,135,0.05)] border border-white/60 flex flex-col items-center justify-center relative cursor-pointer overflow-hidden group"
+            onClick={() => { if (studyMode === 'flashcard') { setShowDefinition(true); resetIdle(); } }}
+            className={`flex-1 bg-white/40 backdrop-blur-xl rounded-[2rem] p-8 shadow-[0_8px_32px_rgba(31,38,135,0.05)] border border-white/60 flex flex-col items-center justify-center relative overflow-hidden group ${studyMode === 'flashcard' ? 'cursor-pointer' : ''}`}
           >
-             <div className="flex items-center justify-center space-x-3 mb-3">
-               <h2 className="text-4xl font-bold text-slate-800 tracking-wide text-center break-words">{currentWord.english}</h2>
-               <button 
-                 onClick={(e) => { e.stopPropagation(); playAudio(currentWord.english); }}
-                 className="p-2 text-teal-600 hover:bg-teal-50 rounded-full transition-colors"
-               >
-                 <Volume2 className="w-5 h-5" />
-               </button>
-             </div>
-             <p className="text-teal-600/70 font-mono text-sm mb-6 text-center">{currentWord.phonetic}</p>
-
-             {!showDefinition ? (
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/20 backdrop-blur-sm">
-                  <div className="flex items-center text-teal-700 bg-white/80 px-6 py-3 rounded-2xl shadow-sm border border-white/50">
-                    <Eye className="w-5 h-5 mr-2" /> <span>点击查看释义</span>
-                  </div>
+            {studyMode === 'flashcard' && (
+              <>
+                <div className="flex items-center justify-center space-x-3 mb-3">
+                  <h2 className="text-4xl font-bold text-slate-800 tracking-wide text-center break-words">{currentWord.english}</h2>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); playAudio(currentWord.english); }}
+                    className="p-2 text-teal-600 hover:bg-teal-50 rounded-full transition-colors"
+                  >
+                    <Volume2 className="w-5 h-5" />
+                  </button>
                 </div>
-              ) : (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }} 
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="flex flex-col items-center w-full"
-                >
-                  <p className="text-lg font-medium text-slate-700 mb-6 text-center leading-relaxed">{currentWord.definition}</p>
-                  <div className="w-2/3 h-px bg-gradient-to-r from-transparent via-teal-200/50 to-transparent mb-6"></div>
-                  <div className="text-left w-full text-sm text-slate-600 space-y-3">
-                    {currentWord.exampleEn ? (
-                      <>
-                        <p className="text-slate-500 font-medium">"{currentWord.exampleEn}"</p>
-                        <p className="text-slate-600">{currentWord.exampleZh}</p>
-                      </>
-                    ) : (
+                <p className="text-teal-600/70 font-mono text-sm mb-6 text-center">{currentWord.phonetic}</p>
+
+                {!showDefinition ? (
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/20 backdrop-blur-sm">
+                      <div className="flex items-center text-teal-700 bg-white/80 px-6 py-3 rounded-2xl shadow-sm border border-white/50">
+                        <Eye className="w-5 h-5 mr-2" /> <span>点击查看释义</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }} 
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="flex flex-col items-center w-full"
+                    >
+                      <p className="text-lg font-medium text-slate-700 mb-6 text-center leading-relaxed">{currentWord.definition}</p>
+                      <div className="w-2/3 h-px bg-gradient-to-r from-transparent via-teal-200/50 to-transparent mb-6"></div>
+                      <div className="text-left w-full text-sm text-slate-600 space-y-3">
+                        {currentWord.exampleEn ? (
+                          <>
+                            <p className="text-slate-500 font-medium">"{currentWord.exampleEn}"</p>
+                            <p className="text-slate-600">{currentWord.exampleZh}</p>
+                          </>
+                        ) : (
+                          <button 
+                            onClick={generateExample}
+                            disabled={isGeneratingInfo}
+                            className="flex items-center text-teal-600 font-medium hover:text-teal-700 transition-colors bg-teal-50/50 px-4 py-2 rounded-xl"
+                          >
+                            {isGeneratingInfo ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                            {isGeneratingInfo ? "生成中..." : "AI 生成例句"}
+                          </button>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+              </>
+            )}
+
+            {studyMode === 'choice' && (
+              <div className="flex flex-col items-center justify-center w-full h-full">
+                <div className="flex items-center justify-center space-x-3 mb-3">
+                  <h2 className="text-4xl font-bold text-slate-800 tracking-wide text-center break-words">{currentWord.english}</h2>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); playAudio(currentWord.english); }}
+                    className="p-2 text-teal-600 hover:bg-teal-50 rounded-full transition-colors"
+                  >
+                    <Volume2 className="w-5 h-5" />
+                  </button>
+                </div>
+                <p className="text-teal-600/70 font-mono text-sm mb-8 text-center">{currentWord.phonetic}</p>
+                
+                <div className="w-full space-y-3">
+                  {choiceOptions.map((opt, i) => (
+                    <button
+                      key={i}
+                      onClick={(e) => { e.stopPropagation(); handleChoiceSelect(opt); }}
+                      className={`w-full text-left p-4 rounded-xl border text-sm transition-all ${
+                        choiceStatus[opt] === 'correct' 
+                          ? 'bg-emerald-50 border-emerald-300 text-emerald-800' 
+                          : choiceStatus[opt] === 'wrong'
+                            ? 'bg-rose-50 border-rose-300 text-rose-800'
+                            : 'bg-white/60 border-white hover:bg-white hover:border-teal-200 text-slate-700'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {studyMode === 'spelling' && (
+              <div className="flex flex-col items-center justify-center w-full h-full">
+                <p className="text-xl font-medium text-slate-700 mb-2 text-center">{currentWord.definition}</p>
+                <div className="flex items-center space-x-2 mb-8">
+                  <p className="text-teal-600/70 font-mono text-sm">{currentWord.phonetic}</p>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); playAudio(currentWord.english); }}
+                    className="p-1 text-teal-600 hover:bg-teal-50 rounded-full transition-colors"
+                  >
+                    <Volume2 className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                <form onSubmit={handleSpellingSubmit} className="w-full relative" onClick={e => e.stopPropagation()}>
+                  <input
+                    type="text"
+                    autoFocus
+                    value={spellingInput}
+                    onChange={e => setSpellingInput(e.target.value)}
+                    disabled={spellingStatus !== 'typing'}
+                    placeholder="输入英文单词..."
+                    className={`w-full text-center text-2xl font-bold p-4 rounded-2xl border-2 outline-none transition-colors ${
+                      spellingStatus === 'correct'
+                        ? 'bg-emerald-50 border-emerald-400 text-emerald-800'
+                        : spellingStatus === 'wrong'
+                          ? 'bg-rose-50 border-rose-400 text-rose-800'
+                          : 'bg-white/80 border-teal-200 focus:border-teal-500 text-slate-800'
+                    }`}
+                  />
+                  {spellingStatus === 'wrong' && (
+                    <div className="mt-4 text-center">
+                      <p className="text-rose-600 font-medium mb-2">正确答案: {currentWord.english}</p>
                       <button 
-                        onClick={generateExample}
-                        disabled={isGeneratingInfo}
-                        className="flex items-center text-teal-600 font-medium hover:text-teal-700 transition-colors bg-teal-50/50 px-4 py-2 rounded-xl"
+                        type="button"
+                        onClick={() => handleAction('forgot')}
+                        className="px-6 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-medium text-sm transition-colors"
                       >
-                        {isGeneratingInfo ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                        {isGeneratingInfo ? "生成中..." : "AI 生成例句"}
+                        继续学习
                       </button>
-                    )}
-                  </div>
-                </motion.div>
-              )}
+                    </div>
+                  )}
+                </form>
+              </div>
+            )}
           </div>
         </motion.div>
       </AnimatePresence>
 
       {/* Action Buttons */}
-      <div className="mt-6 flex justify-between space-x-4 mb-4">
-        <ActionButton 
-          label="忘记" 
-          disabled={!showDefinition} 
-          onClick={() => handleAction('forgot')} 
-          variant="danger" 
-        />
-        <ActionButton 
-          label="模糊" 
-          disabled={!showDefinition} 
-          onClick={() => handleAction('vague')} 
-          variant="warning" 
-        />
-        <ActionButton 
-          label="认识" 
-          disabled={!showDefinition} 
-          onClick={() => handleAction('know')} 
-          variant="success" 
-        />
-      </div>
+      {studyMode === 'flashcard' && (
+        <div className="mt-6 flex justify-between space-x-4 mb-4">
+          <ActionButton 
+            label="忘记" 
+            disabled={!showDefinition} 
+            onClick={() => handleAction('forgot')} 
+            variant="danger" 
+          />
+          <ActionButton 
+            label="模糊" 
+            disabled={!showDefinition} 
+            onClick={() => handleAction('vague')} 
+            variant="warning" 
+          />
+          <ActionButton 
+            label="认识" 
+            disabled={!showDefinition} 
+            onClick={() => handleAction('know')} 
+            variant="success" 
+          />
+        </div>
+      )}
 
       {/* Floating Pet Component */}
       <div className="absolute bottom-[5.5rem] right-4 z-20 flex flex-col items-center">
