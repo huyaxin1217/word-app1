@@ -29,8 +29,7 @@ export function AuthScreen() {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
       } else {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await sendEmailVerification(userCredential.user);
+        await createUserWithEmailAndPassword(auth, email, password);
       }
     } catch (err: any) {
       console.error(err);

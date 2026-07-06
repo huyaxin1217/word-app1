@@ -34,13 +34,19 @@ export const updateUserData = async (userId: string, data: Partial<{ coins: numb
 };
 
 export const fetchWordsForStudy = async (userId: string, book: string): Promise<Word[]> => {
-  // Map static words from the local file
-  const allWords = initialWords.filter(w => w.book === book).map(w => {
+  // Map and deduplicate static words from the local file
+  const seenIds = new Set<string>();
+  const allWords: Word[] = [];
+  
+  initialWords.filter(w => w.book === book).forEach(w => {
     const docId = `${w.book}_${w.english.replace(/\W/g, '')}`;
-    return {
-      id: docId,
-      ...w
-    } as unknown as Word;
+    if (!seenIds.has(docId)) {
+      seenIds.add(docId);
+      allWords.push({
+        id: docId,
+        ...w
+      } as unknown as Word);
+    }
   });
   
   // Fetch user progress
@@ -55,6 +61,7 @@ export const fetchWordsForStudy = async (userId: string, book: string): Promise<
   // Merge static dictionary with user progress
   return allWords.map(w => {
     const p = progressMap.get(w.id);
+    const resolvedFam = p && typeof p.familiarity === 'number' ? (p.familiarity as WordFamiliarity) : 0;
     return {
       id: w.id,
       english: w.english,
@@ -63,9 +70,9 @@ export const fetchWordsForStudy = async (userId: string, book: string): Promise<
       exampleEn: p?.exampleEn || w.exampleEn,
       exampleZh: p?.exampleZh || w.exampleZh,
       book: w.book,
-      familiarity: p ? (p.familiarity as WordFamiliarity) : 0,
+      familiarity: resolvedFam,
       progress: p ? {
-        familiarity: p.familiarity,
+        familiarity: resolvedFam,
         reviewLevel: p.reviewLevel || 0,
         nextReviewTime: p.nextReviewTime || 0,
         lastReviewedAt: p.lastReviewedAt || 0

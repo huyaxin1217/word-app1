@@ -63,29 +63,32 @@ export function TreeProgress({ familiarity }: TreeProgressProps) {
     }
   ];
 
+  const stageIndex = Math.min(stages.length - 1, Math.max(0, typeof familiarity === 'number' ? familiarity : 0));
+  const currentStage = stages[stageIndex];
+
   return (
     <div className="flex flex-col items-center justify-center">
       <div className="relative w-24 h-24 mb-2">
         <AnimatePresence mode="wait">
           <motion.div
-            key={familiarity}
+            key={stageIndex}
             initial={{ scale: 0.5, opacity: 0, y: 10 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 1.2, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
             className="absolute inset-0"
           >
-            {stages[familiarity].svg}
+            {currentStage.svg}
           </motion.div>
         </AnimatePresence>
       </div>
       <motion.div 
-        key={`label-${familiarity}`}
+        key={`label-${stageIndex}`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className="text-xs font-medium text-emerald-700/70 bg-emerald-100/50 px-2 py-1 rounded-full backdrop-blur-sm"
       >
-        {stages[familiarity].label}
+        {currentStage.label}
       </motion.div>
     </div>
   );

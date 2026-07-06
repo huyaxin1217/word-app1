@@ -149,7 +149,7 @@ export function ReviewTab({ outfit, onOpenDressUp, onAddCoins, words, userId, on
   if (!currentWord) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-slate-500 font-medium">今天的新词已经学完啦！</p>
+        <p className="text-slate-500 font-medium">今天的复习词汇已经复习完啦！</p>
       </div>
     );
   }

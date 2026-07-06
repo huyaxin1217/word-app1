@@ -16,7 +16,9 @@ export function ProgressTab({ words = [], coins = 0 }: { words?: Word[], coins?:
       <h2 className="text-3xl font-bold text-slate-800 tracking-tight mb-6">正在学习</h2>
       
       <div className="bg-white/40 backdrop-blur-xl rounded-2xl p-6 shadow-sm border border-white/60 mb-6">
-        <h3 className="text-lg font-semibold text-slate-800 tracking-wide mb-2">六级核心词汇</h3>
+        <h3 className="text-lg font-semibold text-slate-800 tracking-wide mb-2">
+          {words[0]?.book === 'CET4' ? '四级核心词汇' : '六级核心词汇'}
+        </h3>
         <p className="text-sm text-slate-500 mb-6">已学习 {words.filter(w => w.progress).length} / {words.length} 词</p>
         
         <div className="w-full h-2.5 bg-slate-200/50 rounded-full overflow-hidden mb-3">
