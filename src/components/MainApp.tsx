@@ -5,13 +5,13 @@ import { ReviewTab } from './ReviewTab';
 import { LibraryTab } from './LibraryTab';
 import { ProgressTab } from './ProgressTab';
 import { PetDressUpModal, UserProfileModal } from './Modals';
-import { User, Book, Layers, BarChart2, RefreshCcw } from 'lucide-react';
+import { User as UserIcon, Book, Layers, BarChart2, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from '../firebase';
-import { signInAnonymously } from 'firebase/auth';
+import { User } from 'firebase/auth';
 import { initializeVocabulary, getUserData, fetchWordsForStudy, updateUserData } from '../services/db';
 
-export function MainApp() {
+export function MainApp({ user }: { user: User }) {
   const [activeTab, setActiveTab] = useState<TabType>('study');
   const [outfit, setOutfit] = useState<PetOutfit>('none');
   const [showDressUp, setShowDressUp] = useState(false);
@@ -27,19 +27,7 @@ export function MainApp() {
   useEffect(() => {
     const initData = async () => {
       try {
-        let uid = 'local-user';
-        try {
-          const userCred = await signInAnonymously(auth);
-          uid = userCred.user.uid;
-        } catch (authErr) {
-          console.warn("Auth failed, using local fallback ID", authErr);
-          let localId = localStorage.getItem('vocab_user_id');
-          if (!localId) {
-            localId = 'user_' + Math.random().toString(36).substring(2, 9);
-            localStorage.setItem('vocab_user_id', localId);
-          }
-          uid = localId;
-        }
+        const uid = user.uid;
         setUserId(uid);
         
         await initializeVocabulary();
@@ -63,7 +51,7 @@ export function MainApp() {
       }
     };
     initData();
-  }, []);
+  }, [user]);
 
   const handleUpdateCoins = (amount: number) => {
     const newCoins = coins + amount;
@@ -101,7 +89,7 @@ export function MainApp() {
           onClick={() => setShowProfile(true)}
           className="w-10 h-10 rounded-2xl bg-white/50 backdrop-blur-md shadow-sm border border-white/60 flex items-center justify-center hover:bg-white/70 active:scale-95 transition-all"
         >
-          <User className="w-5 h-5 text-slate-600" />
+          <UserIcon className="w-5 h-5 text-slate-600" />
         </button>
 
         {/* Coins indicator */}
@@ -147,7 +135,7 @@ export function MainApp() {
 
       {/* Modals */}
       <PetDressUpModal isOpen={showDressUp} onClose={() => setShowDressUp(false)} currentOutfit={outfit} onSelectOutfit={handleOutfitChange} />
-      <UserProfileModal isOpen={showProfile} onClose={() => setShowProfile(false)} />
+      <UserProfileModal isOpen={showProfile} onClose={() => setShowProfile(false)} email={user.email} />
     </div>
   );
 }

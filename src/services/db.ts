@@ -9,18 +9,26 @@ export const initializeVocabulary = async () => {
   const wordsRef = collection(db, 'words');
   const snapshot = await getDocs(query(wordsRef, where('book', '==', 'CET6')));
   
-  // Seed if empty
-  if (snapshot.empty) {
+  // Seed if we have very few words (e.g. the old 40 limit)
+  if (snapshot.docs.length < 100) {
     console.log('Seeding initial vocabulary...');
-    const batch = writeBatch(db);
-    initialWords.forEach((word) => {
-      const newDocRef = doc(wordsRef);
-      batch.set(newDocRef, {
-        ...word,
-        id: newDocRef.id
+    
+    // Chunk initialWords into sizes of 500 for Firestore batch limits
+    const chunkSize = 500;
+    for (let i = 0; i < initialWords.length; i += chunkSize) {
+      const chunk = initialWords.slice(i, i + chunkSize);
+      const batch = writeBatch(db);
+      
+      chunk.forEach((word) => {
+        const newDocRef = doc(wordsRef);
+        batch.set(newDocRef, {
+          ...word,
+          id: newDocRef.id
+        });
       });
-    });
-    await batch.commit();
+      
+      await batch.commit();
+    }
   }
 };
 

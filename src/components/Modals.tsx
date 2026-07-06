@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { PetOutfit } from '../types';
 import { Pet } from './Pet';
 import { X, Check } from 'lucide-react';
+import { auth } from '../firebase';
+import { signOut } from 'firebase/auth';
 
 interface ModalProps {
   isOpen: boolean;
@@ -92,14 +94,16 @@ export function PetDressUpModal({ isOpen, onClose, currentOutfit, onSelectOutfit
   );
 }
 
-export function UserProfileModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
+export function UserProfileModal({ isOpen, onClose, email }: { isOpen: boolean, onClose: () => void, email?: string | null }) {
   return (
     <BottomModal isOpen={isOpen} onClose={onClose} title="账号与设置">
       <div className="space-y-6">
         <div className="flex items-center space-x-4 p-4 bg-white/40 border border-white/60 rounded-2xl backdrop-blur-md">
-          <div className="w-16 h-16 bg-gradient-to-tr from-teal-400 to-emerald-400 rounded-2xl shadow-sm" />
-          <div>
-            <h4 className="font-semibold text-lg text-slate-800 tracking-wide">学习者 89757</h4>
+          <div className="w-16 h-16 bg-gradient-to-tr from-teal-400 to-emerald-400 rounded-2xl shadow-sm flex items-center justify-center text-white text-xl font-bold">
+            {email ? email[0].toUpperCase() : 'U'}
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <h4 className="font-semibold text-lg text-slate-800 tracking-wide truncate">{email || '学习者'}</h4>
             <p className="text-sm text-slate-500">已连续学习 12 天</p>
           </div>
         </div>
@@ -115,7 +119,13 @@ export function UserProfileModal({ isOpen, onClose }: { isOpen: boolean, onClose
           </div>
         </div>
         
-        <button className="w-full py-4 text-rose-500 font-semibold bg-rose-50/50 rounded-2xl border border-rose-100 active:bg-rose-100/50 transition-colors backdrop-blur-md">
+        <button 
+          onClick={() => {
+            signOut(auth);
+            onClose();
+          }}
+          className="w-full py-4 text-rose-500 font-semibold bg-rose-50/50 rounded-2xl border border-rose-100 active:bg-rose-100/50 transition-colors backdrop-blur-md"
+        >
           退出登录
         </button>
       </div>
