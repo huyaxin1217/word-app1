@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MainApp } from './components/MainApp';
-import { AuthScreen } from './components/AuthScreen';
+import { AuthScreen, EmailVerificationScreen } from './components/AuthScreen';
 import { auth } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
@@ -10,7 +10,6 @@ export default function App() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      // Check if user is fully authenticated (not just anonymously, though we removed anonymous signin)
       setUser(currentUser);
       setLoading(false);
     });
@@ -26,7 +25,7 @@ export default function App() {
             <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : user ? (
-          <MainApp user={user} />
+          user.emailVerified ? <MainApp user={user} /> : <EmailVerificationScreen user={user} />
         ) : (
           <AuthScreen />
         )}

@@ -7,10 +7,11 @@ import { getNextReviewTime } from '../utils/ebbinghaus';
 
 export const initializeVocabulary = async () => {
   const wordsRef = collection(db, 'words');
-  const snapshot = await getDocs(query(wordsRef, where('book', '==', 'CET6')));
+  const snapshot6 = await getDocs(query(wordsRef, where('book', '==', 'CET6')));
+  const snapshot4 = await getDocs(query(wordsRef, where('book', '==', 'CET4')));
   
-  // Seed if we have very few words (e.g. the old 40 limit)
-  if (snapshot.docs.length < 100) {
+  // Seed if we have very few words
+  if (snapshot6.docs.length < 1000 || snapshot4.docs.length < 1000) {
     console.log('Seeding initial vocabulary...');
     
     // Chunk initialWords into sizes of 500 for Firestore batch limits
@@ -20,11 +21,13 @@ export const initializeVocabulary = async () => {
       const batch = writeBatch(db);
       
       chunk.forEach((word) => {
-        const newDocRef = doc(wordsRef);
+        // use a deterministic ID based on word and book to prevent duplicates
+        const docId = `${word.book}_${word.english.replace(/\W/g, '')}`;
+        const newDocRef = doc(wordsRef, docId);
         batch.set(newDocRef, {
           ...word,
-          id: newDocRef.id
-        });
+          id: docId
+        }, { merge: true });
       });
       
       await batch.commit();
@@ -93,9 +96,13 @@ export const fetchWordsForStudy = async (userId: string, book: string): Promise<
   });
 };
 
+export const updateWordData = async (wordId: string, data: Partial<Word>) => {
+  const wordRef = doc(db, 'words', wordId);
+  await updateDoc(wordRef, data);
+};
+
 export const updateWordProgress = async (userId: string, wordId: string, action: 'forgot' | 'vague' | 'know', currentProgress?: any) => {
   const progressRef = doc(db, 'users', userId, 'progress', wordId);
-  
   let newFamiliarity = currentProgress?.familiarity || 0;
   let newReviewLevel = currentProgress?.reviewLevel || 0;
   

@@ -3,8 +3,9 @@ import { Word, WordFamiliarity, PetOutfit } from '../types';
 import { TreeProgress } from './TreeProgress';
 import { Pet } from './Pet';
 import { motion, AnimatePresence } from 'motion/react';
-import { Eye, Shirt } from 'lucide-react';
-import { updateWordProgress } from '../services/db';
+import { Eye, Shirt, Sparkles, Loader2, Volume2 } from 'lucide-react';
+import { updateWordProgress, updateWordData } from '../services/db';
+import { playAudio } from '../utils/audio';
 
 interface ReviewTabProps {
   outfit: PetOutfit;
@@ -19,6 +20,7 @@ export function ReviewTab({ outfit, onOpenDressUp, onAddCoins, words, userId, on
   const [queue, setQueue] = useState<Word[]>([]);
   const [showDefinition, setShowDefinition] = useState(false);
   const [idleTime, setIdleTime] = useState(0);
+  const [isGeneratingInfo, setIsGeneratingInfo] = useState(false);
   
   useEffect(() => {
     if (queue.length === 0 && words.length > 0) {
@@ -29,6 +31,12 @@ export function ReviewTab({ outfit, onOpenDressUp, onAddCoins, words, userId, on
   const currentWord = queue[0];
 
   useEffect(() => {
+    if (currentWord && !showDefinition) {
+      playAudio(currentWord.english);
+    }
+  }, [currentWord?.id, showDefinition]);
+
+  useEffect(() => {
     const timer = setInterval(() => {
       setIdleTime(prev => prev + 1);
     }, 1000);
@@ -36,6 +44,35 @@ export function ReviewTab({ outfit, onOpenDressUp, onAddCoins, words, userId, on
   }, []);
 
   const resetIdle = () => setIdleTime(0);
+
+  const generateExample = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentWord || isGeneratingInfo) return;
+    setIsGeneratingInfo(true);
+    resetIdle();
+    
+    try {
+      const res = await fetch('/api/generate-example', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ word: currentWord.english })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        
+        // Update local state
+        const updatedWord = { ...currentWord, exampleEn: data.exampleEn, exampleZh: data.exampleZh };
+        setQueue(prev => [updatedWord, ...prev.slice(1)]);
+        
+        // Update global DB
+        await updateWordData(currentWord.id, { exampleEn: data.exampleEn, exampleZh: data.exampleZh });
+      }
+    } catch (e) {
+      console.error("Failed to generate example:", e);
+    } finally {
+      setIsGeneratingInfo(false);
+    }
+  };
 
   const handleAction = async (action: 'forgot' | 'vague' | 'know') => {
     resetIdle();
@@ -98,7 +135,15 @@ export function ReviewTab({ outfit, onOpenDressUp, onAddCoins, words, userId, on
             onClick={() => { setShowDefinition(true); resetIdle(); }}
             className="flex-1 bg-white/40 backdrop-blur-xl rounded-[2rem] p-8 shadow-[0_8px_32px_rgba(31,38,135,0.05)] border border-white/60 flex flex-col items-center justify-center relative cursor-pointer overflow-hidden group"
           >
-             <h2 className="text-4xl font-bold text-slate-800 tracking-wide mb-3 text-center break-words w-full">{currentWord.english}</h2>
+             <div className="flex items-center justify-center space-x-3 mb-3">
+               <h2 className="text-4xl font-bold text-slate-800 tracking-wide text-center break-words">{currentWord.english}</h2>
+               <button 
+                 onClick={(e) => { e.stopPropagation(); playAudio(currentWord.english); }}
+                 className="p-2 text-teal-600 hover:bg-teal-50 rounded-full transition-colors"
+               >
+                 <Volume2 className="w-5 h-5" />
+               </button>
+             </div>
              <p className="text-teal-600/70 font-mono text-sm mb-6 text-center">{currentWord.phonetic}</p>
 
              {!showDefinition ? (
@@ -117,8 +162,21 @@ export function ReviewTab({ outfit, onOpenDressUp, onAddCoins, words, userId, on
                   <p className="text-lg font-medium text-slate-700 mb-6 text-center leading-relaxed">{currentWord.definition}</p>
                   <div className="w-2/3 h-px bg-gradient-to-r from-transparent via-teal-200/50 to-transparent mb-6"></div>
                   <div className="text-left w-full text-sm text-slate-600 space-y-3">
-                    <p className="text-slate-500 font-medium">"{currentWord.exampleEn}"</p>
-                    <p className="text-slate-600">{currentWord.exampleZh}</p>
+                    {currentWord.exampleEn ? (
+                      <>
+                        <p className="text-slate-500 font-medium">"{currentWord.exampleEn}"</p>
+                        <p className="text-slate-600">{currentWord.exampleZh}</p>
+                      </>
+                    ) : (
+                      <button 
+                        onClick={generateExample}
+                        disabled={isGeneratingInfo}
+                        className="flex items-center text-teal-600 font-medium hover:text-teal-700 transition-colors bg-teal-50/50 px-4 py-2 rounded-xl"
+                      >
+                        {isGeneratingInfo ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                        {isGeneratingInfo ? "生成中..." : "AI 生成例句"}
+                      </button>
+                    )}
                   </div>
                 </motion.div>
               )}

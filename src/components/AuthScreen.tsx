@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { auth } from '../firebase';
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   setPersistence, 
-  browserLocalPersistence 
+  browserLocalPersistence,
+  sendEmailVerification,
+  User,
+  signOut
 } from 'firebase/auth';
 import { motion, AnimatePresence } from 'motion/react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Mail, RefreshCw, LogOut } from 'lucide-react';
 
 export function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
@@ -21,13 +24,13 @@ export function AuthScreen() {
     setLoading(true);
     setError(null);
     try {
-      // Set persistence to LOCAL (which persists indefinitely until logout, easily satisfying the "half a year" requirement)
       await setPersistence(auth, browserLocalPersistence);
       
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await sendEmailVerification(userCredential.user);
       }
     } catch (err: any) {
       console.error(err);
@@ -123,6 +126,105 @@ export function AuthScreen() {
             {isLogin ? '没有账户？点击注册' : '已有账户？点击登录'}
           </button>
         </div>
+      </motion.div>
+    </div>
+  );
+}
+
+export function EmailVerificationScreen({ user }: { user: User }) {
+  const [resending, setResending] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const handleResend = async () => {
+    setResending(true);
+    setMessage(null);
+    try {
+      await sendEmailVerification(user);
+      setMessage('验证邮件已重新发送，请查收。');
+    } catch (error: any) {
+      if (error.code === 'auth/too-many-requests') {
+        setMessage('发送频率过高，请稍后再试。');
+      } else {
+        setMessage('发送失败，请稍后再试。');
+      }
+    } finally {
+      setResending(false);
+    }
+  };
+
+  const checkVerification = async () => {
+    await user.reload();
+    // After reload, the App component's listener or re-render might catch the updated emailVerified.
+    // If we want to force an update we can just reload the window, as firebase will pick up the new state.
+    if (auth.currentUser?.emailVerified) {
+      window.location.reload();
+    } else {
+      setMessage('尚未验证，请查收邮件并点击验证链接。');
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full w-full bg-slate-50 relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-200/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+      <div className="absolute bottom-0 left-0 w-80 h-80 bg-cyan-200/40 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4"></div>
+
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        className="z-10 w-full max-w-sm px-8 text-center"
+      >
+        <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
+          <Mail className="w-8 h-8" />
+        </div>
+        
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-800 mb-4">
+          验证你的电子邮件
+        </h1>
+        
+        <p className="text-slate-600 text-sm mb-8 leading-relaxed">
+          我们已向 <strong>{user.email}</strong> 发送了一封包含验证链接的邮件。请点击链接验证你的账户。
+        </p>
+
+        <div className="space-y-4">
+          <button
+            onClick={checkVerification}
+            className="w-full bg-emerald-600 text-white rounded-xl py-3 font-medium flex items-center justify-center hover:bg-emerald-700 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            我已验证，点击刷新
+          </button>
+          
+          <button
+            onClick={handleResend}
+            disabled={resending}
+            className="w-full bg-white border border-slate-200 text-slate-700 rounded-xl py-3 font-medium flex items-center justify-center hover:bg-slate-50 transition-colors disabled:opacity-50"
+          >
+            {resending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+            {resending ? '发送中...' : '重新发送验证邮件'}
+          </button>
+
+          <button
+            onClick={() => signOut(auth)}
+            className="w-full text-slate-500 rounded-xl py-3 font-medium flex items-center justify-center hover:text-slate-800 transition-colors mt-4"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            退出登录
+          </button>
+        </div>
+
+        <AnimatePresence>
+          {message && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mt-6 text-sm text-slate-600 bg-slate-200/50 py-2 px-4 rounded-lg"
+            >
+              {message}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </div>
   );

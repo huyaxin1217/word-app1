@@ -114,8 +114,6 @@ export function UserProfileModal({ isOpen, onClose, email }: { isOpen: boolean, 
             <SettingRow label="每日学习目标" value="50 词" />
             <div className="h-px bg-white/60 mx-4" />
             <SettingRow label="发音口音" value="美音" />
-            <div className="h-px bg-white/60 mx-4" />
-            <SettingRow label="A4纸泛背模式" value="关闭" />
           </div>
         </div>
         

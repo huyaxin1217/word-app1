@@ -4,8 +4,9 @@ import { StudyTab } from './StudyTab';
 import { ReviewTab } from './ReviewTab';
 import { LibraryTab } from './LibraryTab';
 import { ProgressTab } from './ProgressTab';
+import { A4Tab } from './A4Tab';
 import { PetDressUpModal, UserProfileModal } from './Modals';
-import { User as UserIcon, Book, Layers, BarChart2, RefreshCcw } from 'lucide-react';
+import { User as UserIcon, Book, Layers, BarChart2, RefreshCcw, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from '../firebase';
 import { User } from 'firebase/auth';
@@ -19,6 +20,7 @@ export function MainApp({ user }: { user: User }) {
   const [coins, setCoins] = useState(0);
   
   const [userId, setUserId] = useState<string | null>(null);
+  const [currentBook, setCurrentBook] = useState<string>('CET6');
   const [allWords, setAllWords] = useState<Word[]>([]);
   const [newWords, setNewWords] = useState<Word[]>([]);
   const [reviewWords, setReviewWords] = useState<Word[]>([]);
@@ -34,6 +36,7 @@ export function MainApp({ user }: { user: User }) {
         const userData = await getUserData(uid);
         setCoins(userData?.coins || 0);
         if (userData?.petOutfit) setOutfit(userData.petOutfit);
+        if (userData?.currentBook) setCurrentBook(userData.currentBook);
         
         const fetchedWords = await fetchWordsForStudy(uid, userData?.currentBook || 'CET6');
         setAllWords(fetchedWords);
@@ -62,6 +65,24 @@ export function MainApp({ user }: { user: User }) {
   const handleOutfitChange = (newOutfit: PetOutfit) => {
     setOutfit(newOutfit);
     if (userId) updateUserData(userId, { petOutfit: newOutfit });
+  };
+
+  const handleBookChange = async (newBook: string) => {
+    if (!userId) return;
+    setLoading(true);
+    setCurrentBook(newBook);
+    await updateUserData(userId, { currentBook: newBook });
+    
+    const fetchedWords = await fetchWordsForStudy(userId, newBook);
+    setAllWords(fetchedWords);
+        
+    const now = Date.now();
+    const unstudied = fetchedWords.filter(w => !w.progress);
+    const toReview = fetchedWords.filter(w => w.progress && w.progress.nextReviewTime <= now);
+    
+    setNewWords(unstudied);
+    setReviewWords(toReview);
+    setLoading(false);
   };
 
   const handleWordStudied = (updatedWord: Word) => {
@@ -108,16 +129,29 @@ export function MainApp({ user }: { user: User }) {
         ) : (
           <AnimatePresence mode="wait">
             {activeTab === 'study' && (
-              <StudyTab key="study" outfit={outfit} onOpenDressUp={() => setShowDressUp(true)} onAddCoins={handleUpdateCoins} words={newWords} userId={userId} onWordStudied={handleWordStudied} />
+              <motion.div key="study" className="h-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <StudyTab outfit={outfit} onOpenDressUp={() => setShowDressUp(true)} onAddCoins={handleUpdateCoins} words={newWords} userId={userId} onWordStudied={handleWordStudied} />
+              </motion.div>
             )}
             {activeTab === 'review' && (
-              <ReviewTab key="review" outfit={outfit} onOpenDressUp={() => setShowDressUp(true)} onAddCoins={handleUpdateCoins} words={reviewWords} userId={userId} onWordReviewed={handleWordReviewed} />
+              <motion.div key="review" className="h-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <ReviewTab outfit={outfit} onOpenDressUp={() => setShowDressUp(true)} onAddCoins={handleUpdateCoins} words={reviewWords} userId={userId} onWordReviewed={handleWordReviewed} />
+              </motion.div>
             )}
             {activeTab === 'library' && (
-               <LibraryTab key="library" />
+              <motion.div key="library" className="h-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <LibraryTab currentBook={currentBook} onChangeBook={handleBookChange} />
+              </motion.div>
             )}
             {activeTab === 'progress' && (
-               <ProgressTab key="progress" words={allWords} coins={coins} />
+              <motion.div key="progress" className="h-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <ProgressTab words={allWords} coins={coins} />
+              </motion.div>
+            )}
+            {activeTab === 'a4' && (
+              <motion.div key="a4" className="h-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <A4Tab words={allWords} currentBook={currentBook} onChangeBook={handleBookChange} />
+              </motion.div>
             )}
           </AnimatePresence>
         )}
@@ -130,6 +164,7 @@ export function MainApp({ user }: { user: User }) {
           <NavButton active={activeTab === 'review'} onClick={() => setActiveTab('review')} icon={<RefreshCcw />} label="复习" />
           <NavButton active={activeTab === 'library'} onClick={() => setActiveTab('library')} icon={<Layers />} label="词书" />
           <NavButton active={activeTab === 'progress'} onClick={() => setActiveTab('progress')} icon={<BarChart2 />} label="进度" />
+          <NavButton active={activeTab === 'a4'} onClick={() => setActiveTab('a4')} icon={<FileText />} label="A4泛背" />
         </div>
       </div>
 
