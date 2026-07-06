@@ -16,6 +16,7 @@ export interface Word {
   exampleZh: string;
   familiarity: WordFamiliarity;
   progress?: WordProgress;
+  book: string;
 }
 
 export type PetOutfit = 'none' | 'hat' | 'glasses' | 'headphone';

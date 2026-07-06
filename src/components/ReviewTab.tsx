@@ -3,7 +3,7 @@ import { Word, WordFamiliarity, PetOutfit } from '../types';
 import { TreeProgress } from './TreeProgress';
 import { Pet } from './Pet';
 import { motion, AnimatePresence } from 'motion/react';
-import { Eye, Shirt, Sparkles, Loader2, Volume2 } from 'lucide-react';
+import { Eye, Shirt, Sparkles, Loader2, Volume2, ChevronDown, Check } from 'lucide-react';
 import { updateWordProgress, updateWordData } from '../services/db';
 import { playAudio } from '../utils/audio';
 
@@ -22,6 +22,7 @@ export function ReviewTab({ outfit, onOpenDressUp, onAddCoins, words, userId, on
   const [idleTime, setIdleTime] = useState(0);
   const [isGeneratingInfo, setIsGeneratingInfo] = useState(false);
   const [studyMode, setStudyMode] = useState<'flashcard' | 'choice' | 'spelling'>('flashcard');
+  const [isModeDropdownOpen, setIsModeDropdownOpen] = useState(false);
 
   // Choice Mode State
   const [choiceOptions, setChoiceOptions] = useState<string[]>([]);
@@ -165,15 +166,63 @@ export function ReviewTab({ outfit, onOpenDressUp, onAddCoins, words, userId, on
       <div className="flex items-center justify-between mb-2 mt-4">
         <div className="flex items-center space-x-3">
           <h2 className="text-2xl font-bold text-slate-800 tracking-tight">今日复习</h2>
-          <select 
-            value={studyMode} 
-            onChange={(e) => setStudyMode(e.target.value as any)}
-            className="bg-white/50 backdrop-blur-sm border border-slate-200 text-slate-700 text-sm font-medium px-2 py-1 rounded-lg outline-none cursor-pointer hover:bg-white/70 transition-colors"
-          >
-            <option value="flashcard">快速认读</option>
-            <option value="choice">释义选择</option>
-            <option value="spelling">拼写听写</option>
-          </select>
+          <div className="relative z-30">
+            <button 
+              onClick={() => setIsModeDropdownOpen(!isModeDropdownOpen)}
+              className="flex items-center space-x-1.5 bg-white/70 backdrop-blur-sm border border-slate-200 text-slate-700 text-xs sm:text-sm font-semibold px-2.5 py-1.5 rounded-xl cursor-pointer hover:bg-white transition-colors shadow-sm"
+            >
+              <span>
+                {studyMode === 'flashcard' && '快速认读'}
+                {studyMode === 'choice' && '释义选择'}
+                {studyMode === 'spelling' && '拼写听写'}
+              </span>
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-300 ${isModeDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {isModeDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-20" onClick={() => setIsModeDropdownOpen(false)} />
+                <motion.div 
+                  initial={{ opacity: 0, y: 6, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute left-0 mt-1.5 w-36 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-100 p-1.5 z-30 origin-top-left flex flex-col space-y-0.5"
+                >
+                  <button 
+                    onClick={() => {
+                      setStudyMode('flashcard');
+                      setIsModeDropdownOpen(false);
+                    }}
+                    className={`flex items-center justify-between w-full px-3 py-1.5 rounded-xl text-left text-xs sm:text-sm font-medium transition-colors ${studyMode === 'flashcard' ? 'bg-teal-50 text-teal-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}
+                  >
+                    <span>快速认读</span>
+                    {studyMode === 'flashcard' && <Check className="w-4 h-4 text-teal-600" />}
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setStudyMode('choice');
+                      setIsModeDropdownOpen(false);
+                    }}
+                    className={`flex items-center justify-between w-full px-3 py-1.5 rounded-xl text-left text-xs sm:text-sm font-medium transition-colors ${studyMode === 'choice' ? 'bg-teal-50 text-teal-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}
+                  >
+                    <span>释义选择</span>
+                    {studyMode === 'choice' && <Check className="w-4 h-4 text-teal-600" />}
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setStudyMode('spelling');
+                      setIsModeDropdownOpen(false);
+                    }}
+                    className={`flex items-center justify-between w-full px-3 py-1.5 rounded-xl text-left text-xs sm:text-sm font-medium transition-colors ${studyMode === 'spelling' ? 'bg-teal-50 text-teal-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}
+                  >
+                    <span>拼写听写</span>
+                    {studyMode === 'spelling' && <Check className="w-4 h-4 text-teal-600" />}
+                  </button>
+                </motion.div>
+              </>
+            )}
+          </div>
         </div>
         <span className="text-sm font-medium text-teal-600 bg-teal-50 px-3 py-1 rounded-full">剩余 {queue.length}</span>
       </div>

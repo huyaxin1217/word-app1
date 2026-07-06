@@ -6,33 +6,9 @@ import { Word, WordFamiliarity, PetOutfit, UserStats } from '../types';
 import { getNextReviewTime } from '../utils/ebbinghaus';
 
 export const initializeVocabulary = async () => {
-  const wordsRef = collection(db, 'words');
-  const snapshot6 = await getDocs(query(wordsRef, where('book', '==', 'CET6')));
-  const snapshot4 = await getDocs(query(wordsRef, where('book', '==', 'CET4')));
-  
-  // Seed if we have very few words
-  if (snapshot6.docs.length < 1000 || snapshot4.docs.length < 1000) {
-    console.log('Seeding initial vocabulary...');
-    
-    // Chunk initialWords into sizes of 500 for Firestore batch limits
-    const chunkSize = 500;
-    for (let i = 0; i < initialWords.length; i += chunkSize) {
-      const chunk = initialWords.slice(i, i + chunkSize);
-      const batch = writeBatch(db);
-      
-      chunk.forEach((word) => {
-        // use a deterministic ID based on word and book to prevent duplicates
-        const docId = `${word.book}_${word.english.replace(/\W/g, '')}`;
-        const newDocRef = doc(wordsRef, docId);
-        batch.set(newDocRef, {
-          ...word,
-          id: docId
-        }, { merge: true });
-      });
-      
-      await batch.commit();
-    }
-  }
+  // Static words are loaded directly from local initialWords.
+  // No database seeding is required, making loading instant and robust!
+  return;
 };
 
 export const getUserData = async (userId: string) => {
@@ -58,14 +34,16 @@ export const updateUserData = async (userId: string, data: Partial<{ coins: numb
 };
 
 export const fetchWordsForStudy = async (userId: string, book: string): Promise<Word[]> => {
-  // We fetch global words for the book
-  const wordsRef = collection(db, 'words');
-  const q = query(wordsRef, where('book', '==', book));
-  const querySnapshot = await getDocs(q);
+  // Map static words from the local file
+  const allWords = initialWords.filter(w => w.book === book).map(w => {
+    const docId = `${w.book}_${w.english.replace(/\W/g, '')}`;
+    return {
+      id: docId,
+      ...w
+    } as unknown as Word;
+  });
   
-  const allWords = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
-  
-  // We fetch user progress
+  // Fetch user progress
   const progressRef = collection(db, 'users', userId, 'progress');
   const progressSnap = await getDocs(progressRef);
   
@@ -74,7 +52,7 @@ export const fetchWordsForStudy = async (userId: string, book: string): Promise<
     progressMap.set(doc.id, doc.data());
   });
   
-  // Merge
+  // Merge static dictionary with user progress
   return allWords.map(w => {
     const p = progressMap.get(w.id);
     return {
@@ -82,10 +60,10 @@ export const fetchWordsForStudy = async (userId: string, book: string): Promise<
       english: w.english,
       phonetic: w.phonetic,
       definition: w.definition,
-      exampleEn: w.exampleEn,
-      exampleZh: w.exampleZh,
+      exampleEn: p?.exampleEn || w.exampleEn,
+      exampleZh: p?.exampleZh || w.exampleZh,
       book: w.book,
-      familiarity: p ? p.familiarity : 0,
+      familiarity: p ? (p.familiarity as WordFamiliarity) : 0,
       progress: p ? {
         familiarity: p.familiarity,
         reviewLevel: p.reviewLevel || 0,
@@ -97,8 +75,15 @@ export const fetchWordsForStudy = async (userId: string, book: string): Promise<
 };
 
 export const updateWordData = async (wordId: string, data: Partial<Word>) => {
-  const wordRef = doc(db, 'words', wordId);
-  await updateDoc(wordRef, data);
+  const userId = auth.currentUser?.uid;
+  if (userId) {
+    // Persist custom user-generated word data (such as AI example sentences) in progress subcollection
+    const progressRef = doc(db, 'users', userId, 'progress', wordId);
+    await setDoc(progressRef, {
+      exampleEn: data.exampleEn,
+      exampleZh: data.exampleZh
+    }, { merge: true });
+  }
 };
 
 export const updateWordProgress = async (userId: string, wordId: string, action: 'forgot' | 'vague' | 'know', currentProgress?: any) => {

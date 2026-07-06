@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Word } from '../types';
 import { motion } from 'motion/react';
-import { Volume2, Search, Filter, BookOpen } from 'lucide-react';
+import { Volume2, Search, Filter, BookOpen, ChevronDown, Check } from 'lucide-react';
 import { playAudio } from '../utils/audio';
 
 export function A4Tab({ words, currentBook, onChangeBook }: { words: Word[], currentBook: string, onChangeBook: (book: string) => void }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [hideDefinition, setHideDefinition] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const filteredWords = words.filter(w => 
     w.english.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -19,16 +20,49 @@ export function A4Tab({ words, currentBook, onChangeBook }: { words: Word[], cur
       <div className="px-6 pt-6 pb-4">
         <div className="flex justify-between items-center mb-1">
           <h1 className="text-2xl font-bold tracking-tight text-slate-800">A4 泛背</h1>
-          <div className="flex items-center space-x-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
-            <BookOpen className="w-4 h-4 text-slate-400" />
-            <select 
-              value={currentBook} 
-              onChange={(e) => onChangeBook(e.target.value)}
-              className="bg-transparent text-sm font-medium text-slate-700 outline-none"
+          <div className="relative">
+            <button 
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center space-x-1.5 bg-white/70 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-sm hover:bg-white active:scale-95 transition-all cursor-pointer text-sm font-medium text-slate-700"
             >
-              <option value="CET4">四级核心词汇</option>
-              <option value="CET6">六级核心词汇</option>
-            </select>
+              <BookOpen className="w-4 h-4 text-teal-500" />
+              <span>{currentBook === 'CET4' ? '四级核心词汇' : '六级核心词汇'}</span>
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {isDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setIsDropdownOpen(false)} />
+                <motion.div 
+                  initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 mt-2 w-44 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-100 p-1.5 z-40 origin-top-right flex flex-col space-y-0.5"
+                >
+                  <button 
+                    onClick={() => {
+                      onChangeBook('CET4');
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`flex items-center justify-between w-full px-3.5 py-2 rounded-xl text-left text-sm font-medium transition-colors ${currentBook === 'CET4' ? 'bg-teal-50 text-teal-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}
+                  >
+                    <span>四级核心词汇</span>
+                    {currentBook === 'CET4' && <Check className="w-4 h-4 text-teal-600" />}
+                  </button>
+                  <button 
+                    onClick={() => {
+                      onChangeBook('CET6');
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`flex items-center justify-between w-full px-3.5 py-2 rounded-xl text-left text-sm font-medium transition-colors ${currentBook === 'CET6' ? 'bg-teal-50 text-teal-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}
+                  >
+                    <span>六级核心词汇</span>
+                    {currentBook === 'CET6' && <Check className="w-4 h-4 text-teal-600" />}
+                  </button>
+                </motion.div>
+              </>
+            )}
           </div>
         </div>
         <p className="text-sm text-slate-500 mt-1">快速浏览所有单词，提升复习效率。</p>
